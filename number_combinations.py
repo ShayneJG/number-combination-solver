@@ -111,6 +111,15 @@ def evaluate_expression(numbers: List[int], operators: List[str]) -> Optional[in
 
     i = 0
     while i < len(ops):
+        if ops[i] in ('**',):
+            nums[i] = nums[i] ** nums[i + 1]
+            nums.pop(i + 1)
+            ops.pop(i)
+        else:
+            i += 1
+
+    i = 0
+    while i < len(ops):
         if ops[i] in ('*', '/'):
             if ops[i] == '*':
                 nums[i] = nums[i] * nums[i + 1]
@@ -425,6 +434,7 @@ def find_solutions(
         allow_multiply: bool = False,
         allow_subtract: bool = False,
         allow_divide: bool = False,
+        allow_exponentiate: bool = False,
         exclude: Optional[List[int]] = None,
         max_numbers: int = 6,
         top_n: int = 5,
@@ -444,6 +454,8 @@ def find_solutions(
         operators.append('-')
     if allow_divide:
         operators.append('/')
+    if allow_exponentiate:
+        operators.append('**')
 
     all_solutions: Set[Solution] = set()
 

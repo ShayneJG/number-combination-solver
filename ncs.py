@@ -17,6 +17,7 @@ if __name__ == "__main__":
             allow_multiply=True,
             allow_subtract=True,
             allow_divide=True,
+            allow_exponentiate=True,
             exclude=[10,],
             max_numbers=6,
             top_n=5,
