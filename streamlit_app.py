@@ -189,6 +189,19 @@ def wrap_if_needed(expr: str, for_mult_div: bool = False) -> str:
     return expr
 
 
+def wrap_for_subtraction(expr: str) -> str:
+    """Wrap expression in parentheses if it contains + or - (for right side of subtraction)."""
+    if expr.startswith('(') and expr.endswith(')'):
+        return expr
+    if '+' in expr or '-' in expr:
+        # Check if it's just a negative number like "-5" which doesn't need parens
+        # But "5-3" or "-5+3" does.
+        # Simple heuristic: if there's a space, it likely has an operator.
+        if ' ' in expr: 
+            return f"({expr})"
+    return expr
+
+
 def generate_all_subexpressions(
     available_numbers: List[int],
     num_count: int,
@@ -304,33 +317,36 @@ def meet_in_middle_search(
         
         for left_val, left_partials in left_values.items():
             # Addition
-            needed = target - left_val
-            if needed in right_values:
-                for lp in left_partials:
-                    for rp in right_values[needed]:
-                        combined_unique = tuple(sorted(set(lp.nums_used + rp.nums_used)))
-                        solutions.add(Solution(
-                            expression=f"{lp.expression} + {rp.expression}",
-                            result=target,
-                            unique_nums=combined_unique,
-                            op_count=lp.op_count + rp.op_count + 1
-                        ))
+            if '+' in operators:
+                needed = target - left_val
+                if needed in right_values:
+                    for lp in left_partials:
+                        for rp in right_values[needed]:
+                            combined_unique = tuple(sorted(set(lp.nums_used + rp.nums_used)))
+                            solutions.add(Solution(
+                                expression=f"{lp.expression} + {rp.expression}",
+                                result=target,
+                                unique_nums=combined_unique,
+                                op_count=lp.op_count + rp.op_count + 1
+                            ))
             
             # Subtraction
-            needed = left_val - target
-            if needed in right_values:
-                for lp in left_partials:
-                    for rp in right_values[needed]:
-                        combined_unique = tuple(sorted(set(lp.nums_used + rp.nums_used)))
-                        solutions.add(Solution(
-                            expression=f"{lp.expression} - {rp.expression}",
-                            result=target,
-                            unique_nums=combined_unique,
-                            op_count=lp.op_count + rp.op_count + 1
-                        ))
+            if '-' in operators:
+                needed = left_val - target
+                if needed in right_values:
+                    for lp in left_partials:
+                        for rp in right_values[needed]:
+                            combined_unique = tuple(sorted(set(lp.nums_used + rp.nums_used)))
+                            right_expr = wrap_for_subtraction(rp.expression)
+                            solutions.add(Solution(
+                                expression=f"{lp.expression} - {right_expr}",
+                                result=target,
+                                unique_nums=combined_unique,
+                                op_count=lp.op_count + rp.op_count + 1
+                            ))
             
             # Multiplication
-            if left_val != 0 and target % left_val == 0:
+            if '*' in operators and left_val != 0 and target % left_val == 0:
                 needed = target // left_val
                 if needed in right_values:
                     for lp in left_partials:
@@ -346,7 +362,7 @@ def meet_in_middle_search(
                             ))
             
             # Division
-            if target != 0 and left_val % target == 0:
+            if '/' in operators and target != 0 and left_val % target == 0:
                 needed = left_val // target
                 if needed in right_values and needed != 0:
                     for lp in left_partials:
@@ -363,18 +379,19 @@ def meet_in_middle_search(
         
         for right_val, right_partials in right_values.items():
             needed = right_val - target
-            if needed in left_values:
+            if '-' in operators and needed in left_values:
                 for rp in right_partials:
                     for lp in left_values[needed]:
                         combined_unique = tuple(sorted(set(lp.nums_used + rp.nums_used)))
+                        left_expr = wrap_for_subtraction(lp.expression)
                         solutions.add(Solution(
-                            expression=f"{rp.expression} - {lp.expression}",
+                            expression=f"{rp.expression} - {left_expr}",
                             result=target,
                             unique_nums=combined_unique,
                             op_count=lp.op_count + rp.op_count + 1
                         ))
             
-            if target != 0 and right_val % target == 0:
+            if '/' in operators and target != 0 and right_val % target == 0:
                 needed = right_val // target
                 if needed in left_values and needed != 0:
                     for rp in right_partials:
